@@ -95,16 +95,16 @@ def handle_updates(updates):
                 reply_markup = get_location()
                 send_message("Send Loction", chat_id = chat, reply_markup = reply_markup)
             else:
-                pass
+                return text
         elif "location" in update["message"].keys():
             lon = update["message"]["location"]['longitude']
             lat = update["message"]["location"]['latitude']
             #send_location(chat, lon, lat)
             birds = bird_search(lon, lat)
             print(lon, lat)
-            print(birds)
             keyboard = build_keyboard(birds)
             send_message("Select an item to delete", chat, keyboard)
+            return birds
             #send_message("Birds seen next to your location\n\n{}".format(birds), chat)
         else:
             pass   
@@ -125,12 +125,23 @@ def handle_updates(updates):
 def main():
     db.setup()
     last_update_id = None
+    keep = None
     while True:
         print("getting updates")
         updates = get_updates(last_update_id)
         if len(updates["result"])>0:
             last_update_id = get_last_update_id(updates) + 1
-            handle_updates(updates)
+            textReturn = handle_updates(updates)
+            print(textReturn)
+            if textReturn is None:
+                pass
+            elif isinstance(textReturn, list):
+                keep = textReturn
+            elif isinstance(textReturn, (str)):
+                print(textReturn)
+            else:
+                pass
+            print(keep)
         time.sleep(0.5)
 
 
