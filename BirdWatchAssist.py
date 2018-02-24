@@ -10,6 +10,7 @@ import requests
 import time
 import urllib #to handle with special characters
 import pandas as pd
+from random import randint
 from dbhelper import DBHelper # import class and method created to work with sqlite3
 from API import API, EBirdKey # bot API
 
@@ -53,6 +54,11 @@ def send_message(text, chat_id, reply_markup = None):
     if reply_markup:
         url += "&reply_markup={}".format(reply_markup)
     get_url(url)
+
+def build_keyboard(items):
+    keyboard = [[item] for item in items]
+    reply_markup = {"keyboard" : keyboard, "one_time_keyboard" : True}
+    return json.dumps(reply_markup)
     
 def send_location(chat, lon, lat):
     #lat = -22.0
@@ -61,23 +67,23 @@ def send_location(chat, lon, lat):
     get_url(url)
     
 def get_location():
-    reply_markup = ['{"keyboard":[[{"text":"Send Location","request_location":true}]]}']
-    url = URL + "sendMessage?chat_id={}&text=Send Location&reply_markup={}".format(chat, reply_markup[0])
-    get_url(url)
-    #url = URL + "sendMessage?chat_id={}&text=Send Location&reply_markup={'keyboard':[[{'text':'Send Location','request_location':true}]]}".format(chat)
+    reply_markup = {"keyboard": [[{"text": "Send Location", "request_location": True}], ["Cancel"]], "one_time_keyboard": True, "resize_keyboard": True}
+    json.dumps(reply_markup)
+    return json.dumps(reply_markup)
     
-    
-    return json.dumps(reply_markup)    
 
 def bird_search(lon, lat):
     url = "https://ebird.org/ws2.0/data/obs/geo/recent"
     querystring = {"lat":"{}".format(lat),"lng":"{}".format(lon)}
-    headers = {'X-eBirdApiToken': '{}'.format('gcqrk8ecdt96')}
+    headers = {'X-eBirdApiToken': '{}'.format(EBirdKey)}
     response = requests.request("GET", url, headers=headers, params=querystring)
     response = json.loads(response.text)
     response = pd.DataFrame(response)
-    response = response[["sciName", "comName", "lng", "lat"]]
-    return response
+    response = response[["sciName", "comName"]] # , "lng", "lat"]]
+    response = response.rename(index=str, columns={"sciName":"ScientificName", "comName":"CommonName"})
+    response  = response.sample(5)
+    response2  = response.values.tolist()
+    return response2
                 
 def handle_updates(updates):
     for update in updates["result"]:
@@ -88,8 +94,8 @@ def handle_updates(updates):
             if text == "/start":
                 send_message("Welcome to your personal To Do list. Send any text to me and I'll store it as an item. Send /done to remove items", chat)
                 reply_markup = get_location()
-                #send_message(teschat_id = chat, reply_markup)
-                send_location(chat)
+                send_message("Send Loction", chat_id = chat, reply_markup = reply_markup)
+                #send_location(chat)
             else:
                 pass
         elif "location" in update["message"].keys():
@@ -97,7 +103,12 @@ def handle_updates(updates):
             lat = update["message"]["location"]['latitude']
             send_location(chat, lon, lat)
             birds = bird_search(lon, lat)
-            #send_message("{}".format(birds), chat)
+            print(lon, lat)
+            print(birds)
+            keyboard = build_keyboard(birds)
+            send_message("Select an item to delete", chat, keyboard)
+            #send_message("Birds seen next to your location\n\n{}".format(birds), chat)
+            
         else:
             pass   
         #elif text.startswith("/"):
