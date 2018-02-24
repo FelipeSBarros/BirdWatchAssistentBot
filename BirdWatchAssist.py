@@ -81,12 +81,8 @@ def bird_search(lon, lat):
     response = response[["sciName"]]#, "comName", "lng", "lat"]]
     response = response.rename(index=str, columns={"sciName":"ScientificName"})#, "comName":"CommonName"})
     response  = response.sample(5)
-    response2  = response.values.tolist()
-    blist = []
-    for a in response2:
-        print(a)
-        blist.append(a[0])
-    return blist
+    response = response.values.flatten().tolist()
+    return response
                 
 def handle_updates(updates):
     for update in updates["result"]:
