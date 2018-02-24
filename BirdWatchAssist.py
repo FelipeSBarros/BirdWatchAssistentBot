@@ -70,7 +70,6 @@ def get_location():
     reply_markup = {"keyboard": [[{"text": "Send Location", "request_location": True}], ["Cancel"]], "one_time_keyboard": True, "resize_keyboard": True}
     json.dumps(reply_markup)
     return json.dumps(reply_markup)
-    
 
 def bird_search(lon, lat):
     url = "https://ebird.org/ws2.0/data/obs/geo/recent"
@@ -79,11 +78,15 @@ def bird_search(lon, lat):
     response = requests.request("GET", url, headers=headers, params=querystring)
     response = json.loads(response.text)
     response = pd.DataFrame(response)
-    response = response[["sciName", "comName"]] # , "lng", "lat"]]
-    response = response.rename(index=str, columns={"sciName":"ScientificName", "comName":"CommonName"})
+    response = response[["sciName"]]#, "comName", "lng", "lat"]]
+    response = response.rename(index=str, columns={"sciName":"ScientificName"})#, "comName":"CommonName"})
     response  = response.sample(5)
     response2  = response.values.tolist()
-    return response2
+    blist = []
+    for a in response2:
+        print(a)
+        blist.append(a[0])
+    return blist
                 
 def handle_updates(updates):
     for update in updates["result"]:
@@ -95,20 +98,18 @@ def handle_updates(updates):
                 send_message("Welcome to your personal To Do list. Send any text to me and I'll store it as an item. Send /done to remove items", chat)
                 reply_markup = get_location()
                 send_message("Send Loction", chat_id = chat, reply_markup = reply_markup)
-                #send_location(chat)
             else:
                 pass
         elif "location" in update["message"].keys():
             lon = update["message"]["location"]['longitude']
             lat = update["message"]["location"]['latitude']
-            send_location(chat, lon, lat)
+            #send_location(chat, lon, lat)
             birds = bird_search(lon, lat)
             print(lon, lat)
             print(birds)
             keyboard = build_keyboard(birds)
             send_message("Select an item to delete", chat, keyboard)
             #send_message("Birds seen next to your location\n\n{}".format(birds), chat)
-            
         else:
             pass   
         #elif text.startswith("/"):
