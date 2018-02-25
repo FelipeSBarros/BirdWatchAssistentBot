@@ -6,8 +6,8 @@ This project aims to develop a chatbot to help {beginners} entusiast of bird wat
 
 ## To do list:  
   
-- [ ] Request user location;  
-- [ ] Based on user location, request E-Bird API to retrieve species list;  
+- [X] Request user location;  
+- [X] Based on user location, request E-Bird API to retrieve species list;  
 - [ ] Allow user select a specif species name to retrieve species [*photo*](https://ebird.org/media);  
 - [ ] Allow user select a specif species name to retrieve species [*sound*](https://www.macaulaylibrary.org/about/request-media/);  
 
@@ -17,7 +17,7 @@ This project aims to develop a chatbot to help {beginners} entusiast of bird wat
 
 * [pandas](http://pbpython.com/pandas-list-dict.html)
 
-* E-Bird API request key: https://ebird.org/api/keygen
+* [E-Bird API request key](https://ebird.org/api/keygen)
 
 * [ebird-api-20](https://documenter.getpostman.com/view/664302/ebird-api-20/2HTbHW)
 
