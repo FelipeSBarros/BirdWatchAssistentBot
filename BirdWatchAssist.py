@@ -12,7 +12,7 @@ import urllib #to handle with special characters
 import pandas as pd
 from random import randint
 from dbhelper import DBHelper # import class and method created to work with sqlite3
-from API import API, EBirdKey # bot API
+from API import API, EBirdKey # bot API, E-Bird API
 
 TOKEN = API
 URL = "https://api.telegram.org/bot{}/".format(TOKEN)
@@ -83,7 +83,22 @@ def bird_search(lon, lat):
     response  = response.sample(5)
     response = response.values.flatten().tolist()
     return response
-                
+
+def get_birdSongs(birdName):
+    url = 'http://www.xeno-canto.org/api/2/recordings?query={}'.format(birdName)
+    soundLink = requests.get(url)
+    if soundLink.status_code == 200:
+        soundLink = soundLink.content.decode("utf8")
+        soundLink = json.loads(soundLink)
+        soundLink  = random.sample(soundLink["recordings"],3)
+        for a in soundLink:
+            file = a["file"]
+            sngType = a["type"]
+            requests.get('https://api.telegram.org/bot{}/sendAudio?chat_id={}&audio={}&caption=Type: {}'.format(TOKEN, chat, file, sngType))
+    else:
+        msg = "I Couldn't find any bird song for {} on *Xeno-Canto database".format(birdName)
+        send_message(msg, chat)
+
 def handle_updates(updates):
     for update in updates["result"]:
         chat = update["message"]["chat"]["id"]
