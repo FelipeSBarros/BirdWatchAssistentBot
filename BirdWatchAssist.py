@@ -10,7 +10,7 @@ import requests
 import time
 import urllib #to handle with special characters
 import pandas as pd
-from random import randint
+import random
 from dbhelper import DBHelper # import class and method created to work with sqlite3
 from API import API, EBirdKey # bot API, E-Bird API
 
@@ -61,8 +61,9 @@ def build_keyboard(items):
     return json.dumps(reply_markup)
     
 def send_location(chat, lon, lat):
-    #lat = -22.0
-    #lon = -42.0
+    #lat = -27.364056
+    #lon = -55.904087
+
     url = URL + "sendLocation?chat_id={}&latitude={}&longitude={}".format(chat, lat, lon)
     get_url(url)
     
@@ -82,19 +83,23 @@ def bird_search(lon, lat):
     response = response.rename(index=str, columns={"sciName":"ScientificName"})#, "comName":"CommonName"})
     response  = response.sample(5)
     response = response.values.flatten().tolist()
-    return response
+    return response#.sort()
 
-def get_birdSongs(birdName):
+def get_birdSongs(birdName, chat):
     url = 'http://www.xeno-canto.org/api/2/recordings?query={}'.format(birdName)
     soundLink = requests.get(url)
     if soundLink.status_code == 200:
         soundLink = soundLink.content.decode("utf8")
         soundLink = json.loads(soundLink)
-        soundLink  = random.sample(soundLink["recordings"],3)
-        for a in soundLink:
-            file = a["file"]
-            sngType = a["type"]
-            requests.get('https://api.telegram.org/bot{}/sendAudio?chat_id={}&audio={}&caption=Type: {}'.format(TOKEN, chat, file, sngType))
+        if len(soundLink["recordings"]) >= 1:
+            soundLink = random.choice(soundLink["recordings"])
+            #soundLink = soundLink["recordings"]
+            file = soundLink["file"]
+            file = file.strip("//")
+            sngType = soundLink["type"]
+            requests.get(URL+'sendAudio?chat_id={}&audio={}&caption=Type: {}'.format(chat, file, sngType))
+        else:
+            pass
     else:
         msg = "I Couldn't find any bird song for {} on *Xeno-Canto database".format(birdName)
         send_message(msg, chat)
@@ -106,59 +111,34 @@ def handle_updates(updates):
         if "text" in update["message"].keys():
             text = update["message"]["text"]
             if text == "/start":
-                send_message("Welcome to your personal To Do list. Send any text to me and I'll store it as an item. Send /done to remove items", chat)
+                send_message("Welcome to your personal Bird Wathcing Assistent.\nThis Bot will help you by provinding information of recently seen bird around your area.\n\nShare your location and it will retreive a list of five randomly selected species recently seen and registered on E-Bird Database.\n\nThen, choosing one species will retrieve its songs, so you can get used with its songs.", chat)
                 reply_markup = get_location()
                 send_message("Send Loction", chat_id = chat, reply_markup = reply_markup)
+            elif text.startswith("Song:"):
+                birdname = text.strip("Song: ")
+                print(birdname)
+                get_birdSongs(birdname, chat)
             else:
-                return text
+                pass
         elif "location" in update["message"].keys():
             lon = update["message"]["location"]['longitude']
             lat = update["message"]["location"]['latitude']
-            #send_location(chat, lon, lat)
             birds = bird_search(lon, lat)
+            birds = ['{}{}'.format("Song: ", b) for b in birds]
             print(lon, lat)
             keyboard = build_keyboard(birds)
             send_message("Select an item to delete", chat, keyboard)
-            return birds
-            #send_message("Birds seen next to your location\n\n{}".format(birds), chat)
         else:
-            pass   
-        #elif text.startswith("/"):
-        #    continue
-#        elif text in items:
-#            db.delete_item(text, chat)
-#            items = db.get_items(chat)
-#            message = "\n".join(items)
-#            keyboard = build_keyboard(items)
-#            send_message("Select an item to delete", chat, keyboard)
-#        else:
-#            db.add_item(text, chat)
-#            items = db.get_items(chat)
-#            message = "\n".join(items)
-#            send_message(message, chat)
+            pass
 
 def main():
-    db.setup()
     last_update_id = None
-    keep = None
     while True:
         print("getting updates")
         updates = get_updates(last_update_id)
         if len(updates["result"])>0:
             last_update_id = get_last_update_id(updates) + 1
-            textReturn = handle_updates(updates)
-            print(textReturn)
-            if textReturn is None:
-                pass
-            elif isinstance(textReturn, list):
-                keep = textReturn
-            elif isinstance(textReturn, (str)):
-                print(textReturn)
-            else:
-                pass
-            print(keep)
+            handle_updates(updates)
         time.sleep(0.5)
-
-
 if __name__ == '__main__':
     main()
